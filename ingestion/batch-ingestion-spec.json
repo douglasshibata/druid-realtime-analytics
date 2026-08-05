@@ -1,0 +1,91 @@
+{
+  "type": "index_parallel",
+  "spec": {
+    "ioConfig": {
+      "type": "index_parallel",
+      "inputSource": {
+        "type": "s3",
+        "uris": ["s3://druid-segments/batch-imports/historical-clicks.json"],
+        "endpointConfig": {
+          "url": "http://minio:9000",
+          "signingRegion": "us-east-1"
+        },
+        "clientConfig": {
+          "protocol": "http"
+        }
+      },
+      "inputFormat": {
+        "type": "json"
+      },
+      "appendToExisting": false
+    },
+    "tuningConfig": {
+      "type": "index_parallel",
+      "maxRowsInMemory": 1000000,
+      "maxBytesInMemory": 209715200,
+      "segmentGranularity": "DAY",
+      "partitionsSpec": {
+        "type": "hashed",
+        "targetPartitionSize": 5000000
+      },
+      "indexSpec": {
+        "bitmap": {
+          "type": "roaring"
+        },
+        "dimensionCompression": "lz4",
+        "metricCompression": "lz4",
+        "longEncoding": "longs"
+      }
+    },
+    "dataSchema": {
+      "dataSource": "clickstream_batch",
+      "timestampSpec": {
+        "column": "timestamp",
+        "format": "auto"
+      },
+      "dimensionsSpec": {
+        "dimensions": [
+          { "type": "string", "name": "user_id" },
+          { "type": "string", "name": "event_type" },
+          { "type": "string", "name": "page_url" },
+          { "type": "string", "name": "device_type" },
+          { "type": "string", "name": "country" },
+          { "type": "string", "name": "referrer_source" }
+        ]
+      },
+      "granularitySpec": {
+        "type": "uniform",
+        "segmentGranularity": "DAY",
+        "queryGranularity": "HOUR",
+        "rollup": true
+      },
+      "metricsSpec": [
+        {
+          "type": "count",
+          "name": "cnt"
+        },
+        {
+          "type": "longSum",
+          "name": "duration_ms",
+          "fieldName": "duration_ms"
+        },
+        {
+          "type": "doubleSum",
+          "name": "purchase_amount",
+          "fieldName": "purchase_amount"
+        },
+        {
+          "type": "thetaSketch",
+          "name": "unique_users_sketch",
+          "fieldName": "user_id",
+          "size": 16384
+        },
+        {
+          "type": "hyperUnique",
+          "name": "unique_sessions_hll",
+          "fieldName": "session_id"
+        }
+      ]
+    }
+  }
+}

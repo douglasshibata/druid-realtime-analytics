@@ -1,0 +1,83 @@
+{
+  "type": "kafka",
+  "spec": {
+    "ioConfig": {
+      "type": "kafka",
+      "consumerProperties": {
+        "bootstrap.servers": "kafka:9092",
+        "group.id": "druid-streaming-consumer"
+      },
+      "topic": "clickstream-events",
+      "inputFormat": {
+        "type": "json"
+      },
+      "useEarliestOffset": true,
+      "appendToExisting": false
+    },
+    "tuningConfig": {
+      "type": "kafka",
+      "maxRowsInMemory": 500000,
+      "maxBytesInMemory": 104857600,
+      "intermediateHandoffPeriod": "PT2M",
+      "segmentGranularity": "HOUR",
+      "indexSpec": {
+        "bitmap": {
+          "type": "roaring"
+        },
+        "dimensionCompression": "lz4",
+        "metricCompression": "lz4",
+        "longEncoding": "longs"
+      }
+    },
+    "dataSchema": {
+      "dataSource": "clickstream_realtime",
+      "timestampSpec": {
+        "column": "timestamp",
+        "format": "auto"
+      },
+      "dimensionsSpec": {
+        "dimensions": [
+          { "type": "string", "name": "user_id" },
+          { "type": "string", "name": "event_type" },
+          { "type": "string", "name": "page_url" },
+          { "type": "string", "name": "device_type" },
+          { "type": "string", "name": "country" },
+          { "type": "string", "name": "referrer_source" }
+        ]
+      },
+      "granularitySpec": {
+        "type": "uniform",
+        "segmentGranularity": "HOUR",
+        "queryGranularity": "MINUTE",
+        "rollup": true
+      },
+      "metricsSpec": [
+        {
+          "type": "count",
+          "name": "cnt"
+        },
+        {
+          "type": "longSum",
+          "name": "duration_ms",
+          "fieldName": "duration_ms"
+        },
+        {
+          "type": "doubleSum",
+          "name": "purchase_amount",
+          "fieldName": "purchase_amount"
+        },
+        {
+          "type": "thetaSketch",
+          "name": "unique_users_sketch",
+          "fieldName": "user_id",
+          "size": 16384
+        },
+        {
+          "type": "hyperUnique",
+          "name": "unique_sessions_hll",
+          "fieldName": "session_id"
+        }
+      ]
+    }
+  }
+}
